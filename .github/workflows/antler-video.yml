@@ -1,0 +1,39 @@
+name: Build Antler Livestock Pitch Video
+on:
+  push:
+    paths:
+      - 'antler/livestock-wealth/build_video.py'
+      - '.github/workflows/antler-video.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build-video:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install video dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg espeak fonts-dejavu-core
+          pip install Pillow
+      - name: Render concept video
+        run: python antler/livestock-wealth/build_video.py
+      - name: Verify output
+        run: |
+          test -s antler/livestock-wealth/minken_antler_livestock_pitch.mp4
+          ffprobe -v error -show_entries format=duration,size -of json antler/livestock-wealth/minken_antler_livestock_pitch.mp4
+      - name: Upload video as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: minken-antler-livestock-pitch
+          path: antler/livestock-wealth/minken_antler_livestock_pitch.mp4
+      - name: Commit video to GitHub repository
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add antler/livestock-wealth/minken_antler_livestock_pitch.mp4
+          git diff --cached --quiet || (git commit -m 'Render Antler livestock pitch MP4' && git push)
